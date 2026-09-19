@@ -6,7 +6,7 @@
   <meta name="description" content="An interactive Mars colony operations simulator for testing capacity, buffers, failures, and resupply risk.">
   <title>Mars Operations Control</title>
   <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%23110e0d'/%3E%3Ccircle cx='32' cy='32' r='19' fill='%23c75832'/%3E%3Cpath d='M17 34c9-5 20-7 31-4M22 20c7 4 13 5 22 4M26 48c3-5 8-8 15-11' fill='none' stroke='%23f2c29e' stroke-width='3' stroke-linecap='round' opacity='.8'/%3E%3C/svg%3E">
-  <link rel="stylesheet" href="styles.css?v=3">
+  <link rel="stylesheet" href="styles.css?v=4">
 </head>
 <body>
   <header class="topbar">
@@ -200,6 +200,31 @@
       <p class="guide-kicker">Section 8</p><h3>Try this 60-second test</h3>
       <ol><li>Leave the population at 20.</li><li>Click <strong>Resupply delayed</strong>.</li><li>Find the first bottleneck.</li><li>Notice the days-to-shortage number.</li><li>Raise local food capacity and watch the recommendation improve.</li></ol>
     </section>
+
+    <section class="guide-section math-guide">
+      <p class="guide-kicker">Section 9</p><h3>The math and decision logic</h3>
+      <p>You can understand the model with six simple calculations. The website repeats these calculations every time you move a slider.</p>
+      <div class="math-steps">
+        <article><span>1</span><div><strong>Calculate what people need</strong><p><code>Demand = base demand × population ÷ 20</code></p><p>The starting plan is for 20 people. If population doubles from 20 to 40, demand doubles.</p><small>Example: food demand 20 × 40 ÷ 20 = 40 units.</small></div></article>
+        <article><span>2</span><div><strong>Calculate supply available today</strong><p><code>Available supply = local production + Earth delivery</code></p><p>Local production comes from the capacity sliders. Earth normally covers 2% of water demand and 45% of food demand. A delayed-resupply scenario removes the current Earth delivery.</p><small>Example: 55 local food units + 45 Earth units = 100 available units.</small></div></article>
+        <article><span>3</span><div><strong>Find the safety margin</strong><p><code>Safety margin = (available supply − demand) ÷ demand</code></p><p>A positive number means extra capacity. Zero means supply just meets demand. A negative number means shortage.</p><small>Example: (112 − 100) ÷ 100 = 12% extra capacity.</small></div></article>
+        <article><span>4</span><div><strong>Find how long inventory lasts</strong><p><code>Days to shortage = stored inventory ÷ daily deficit</code></p><p>The deficit is the part of daily demand that supply cannot cover. Inventory fills that gap until it runs out.</p><small>Example: a 75-day full-demand food buffer covering a 45% daily gap lasts 75 ÷ 0.45 ≈ 167 days.</small></div></article>
+        <article><span>5</span><div><strong>Find the bottleneck</strong><p><code>Bottleneck = resource with the smallest safety margin</code></p><p>The model compares water, food, and power. The lowest margin is the weakest link.</p><small>Example: water +12%, food 0%, power +14% → food is the bottleneck.</small></div></article>
+        <article><span>6</span><div><strong>Measure reliance on Earth</strong><p><code>Earth dependency = planned Earth supply ÷ total critical demand</code></p><p>This combines the Earth-supported share of water, food, and power. A lower percentage means the colony is more self-sufficient.</p><small>The result is a share of total daily critical-resource demand.</small></div></article>
+      </div>
+      <div class="score-explanation">
+        <h4>How the readiness score is built</h4>
+        <p>The score is a transparent planning aid, not a scientific rating. Each component receives a 0–100 score, then the model applies these weights:</p>
+        <div class="weight-bar" role="img" aria-label="Readiness score weights: capacity coverage 45 percent, inventory runway 25 percent, power resilience 20 percent, and low Earth dependency 10 percent"><span class="w-capacity">45% Capacity</span><span class="w-runway">25% Runway</span><span class="w-power">20% Power</span><span class="w-earth">10% Earth</span></div>
+        <p class="score-formula"><code>Readiness = capacity × 45% + runway × 25% + power resilience × 20% + low Earth dependency × 10%</code></p>
+        <ul><li><strong>Capacity coverage:</strong> uses the weakest resource’s available supply compared with demand.</li><li><strong>Inventory runway:</strong> compares days to shortage with the time until resupply.</li><li><strong>Power resilience:</strong> rewards unused power headroom and penalizes overload.</li><li><strong>Low Earth dependency:</strong> rewards greater self-sufficiency.</li></ul>
+      </div>
+      <div class="decision-logic">
+        <h4>How the final recommendation is chosen</h4>
+        <div class="decision-cards"><article class="decision-expand"><strong>EXPAND</strong><p>Readiness is at least 80, every resource has at least 15% spare capacity, and inventory covers the operating interval.</p></article><article class="decision-hold"><strong>HOLD</strong><p>The colony can continue, but one or more expansion tests are not yet strong enough. Improve the bottleneck first.</p></article><article class="decision-critical"><strong>CRITICAL</strong><p>Readiness is below 55, power demand exceeds production, or inventory runs out before a delayed delivery arrives.</p></article></div>
+        <p><strong>Important:</strong> Critical always overrides the other recommendations. The same inputs always produce the same answer.</p>
+      </div>
+    </section>
     <p class="science-note">The model is a simple decision tool for comparing operating choices. It is not a scientifically validated Mars mission plan.</p>
   </dialog>
 
@@ -218,7 +243,7 @@
     <div class="dialog-head"><h2>Readiness score</h2><button class="close-button" type="button" aria-label="Close formula">Close</button></div>
     <p>Readiness combines four explainable components: capacity coverage (45%), inventory runway (25%), power resilience (20%), and low Earth dependency (10%). Each component is capped at 100 before weighting.</p>
   </dialog>
-  <script src="script.js?v=3"></script>
+  <script src="script.js?v=4"></script>
 </body>
 </html>
 
