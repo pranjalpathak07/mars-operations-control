@@ -1,0 +1,134 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="An interactive Mars colony operations simulator for testing capacity, buffers, failures, and resupply risk.">
+  <title>Mars Operations Control</title>
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%23110e0d'/%3E%3Ccircle cx='32' cy='32' r='19' fill='%23c75832'/%3E%3Cpath d='M17 34c9-5 20-7 31-4M22 20c7 4 13 5 22 4M26 48c3-5 8-8 15-11' fill='none' stroke='%23f2c29e' stroke-width='3' stroke-linecap='round' opacity='.8'/%3E%3C/svg%3E">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand"><span class="brand-mark" aria-hidden="true"></span><span>MARS // OPERATIONS CONTROL</span></div>
+    <div class="header-actions">
+      <span class="model-label">Illustrative operations model</span>
+      <button class="text-button" id="open-assumptions" type="button">Model assumptions</button>
+    </div>
+  </header>
+
+  <main>
+    <section class="intro" aria-labelledby="page-title">
+      <div>
+        <p class="eyebrow">Colony decision simulator</p>
+        <h1 id="page-title">How many people can Mars support before the system breaks?</h1>
+      </div>
+      <p class="intro-copy">Adjust the operating plan. The model will identify the first constraint, estimate the runway, and recommend whether to expand, hold, or stabilize.</p>
+    </section>
+
+    <nav class="scenario-tabs" aria-label="Operating scenario">
+      <button class="scenario active" type="button" data-scenario="normal" aria-pressed="true"><span>01</span> Normal operations</button>
+      <button class="scenario" type="button" data-scenario="delay" aria-pressed="false"><span>02</span> Resupply delayed</button>
+      <button class="scenario" type="button" data-scenario="failure" aria-pressed="false"><span>03</span> System failure</button>
+      <button class="scenario" type="button" data-scenario="expansion" aria-pressed="false"><span>04</span> Population expansion</button>
+    </nav>
+
+    <section class="dashboard" aria-label="Mars colony operations dashboard">
+      <aside class="panel controls-panel">
+        <div class="panel-heading">
+          <div><p class="section-number">CONTROL</p><h2>Operating inputs</h2></div>
+          <button id="reset" class="icon-button" type="button" aria-label="Reset inputs">Reset</button>
+        </div>
+
+        <div class="control-group">
+          <div class="control-label"><label for="population">Colony population</label><output id="population-output" for="population">20 people</output></div>
+          <input id="population" type="range" min="8" max="80" value="20" step="1">
+          <div class="range-ends"><span>8</span><span>80</span></div>
+        </div>
+
+        <div class="control-group">
+          <div class="control-label"><label for="water">Water system capacity</label><output id="water-output" for="water">110%</output></div>
+          <input id="water" type="range" min="30" max="160" value="110" step="5">
+          <div class="range-ends"><span>30%</span><span>160%</span></div>
+        </div>
+
+        <div class="control-group">
+          <div class="control-label"><label for="food">Food system capacity</label><output id="food-output" for="food">55%</output></div>
+          <input id="food" type="range" min="20" max="140" value="55" step="5">
+          <div class="range-ends"><span>20%</span><span>140%</span></div>
+        </div>
+
+        <div class="control-group">
+          <div class="control-label"><label for="power">Power capacity</label><output id="power-output" for="power">125%</output></div>
+          <input id="power" type="range" min="50" max="180" value="125" step="5">
+          <div class="range-ends"><span>50%</span><span>180%</span></div>
+        </div>
+
+        <div class="two-controls">
+          <div><label for="buffer">Inventory buffer</label><div class="input-unit"><input id="buffer" type="number" min="7" max="240" value="75"><span>days</span></div></div>
+          <div><label for="resupply">Resupply interval</label><div class="input-unit"><input id="resupply" type="number" min="30" max="360" value="120"><span>days</span></div></div>
+        </div>
+
+        <div class="failure-control" id="failure-control" hidden>
+          <label for="failed-system">System under stress</label>
+          <select id="failed-system"><option value="water">Water extraction</option><option value="food">Food production</option><option value="power">Power generation</option></select>
+          <div class="control-label compact"><label for="failure-severity">Remaining output</label><output id="failure-output" for="failure-severity">25%</output></div>
+          <input id="failure-severity" type="range" min="0" max="60" value="25" step="5">
+        </div>
+      </aside>
+
+      <section class="panel metrics-panel">
+        <div class="panel-heading"><div><p class="section-number">STATUS</p><h2>Colony outlook</h2></div><span class="scenario-chip" id="scenario-chip">Normal operations</span></div>
+        <div class="readiness-block">
+          <div class="score-ring" id="score-ring"><div><strong id="readiness">78</strong><span>/ 100</span></div></div>
+          <div><p class="metric-label">Operational readiness</p><p class="score-note" id="score-note">Weighted view of capacity, runway, and Earth dependency.</p></div>
+        </div>
+        <div class="metric-grid">
+          <article><p class="metric-label">First bottleneck</p><strong id="bottleneck">Food</strong><span id="bottleneck-detail">45% supplied from Earth</span></article>
+          <article><p class="metric-label">Days to shortage</p><strong id="runway">167</strong><span id="runway-detail">Inventory runway under current plan</span></article>
+          <article><p class="metric-label">Power utilization</p><strong id="power-util">80%</strong><span id="power-detail">20% headroom</span></article>
+          <article><p class="metric-label">Earth dependency</p><strong id="earth-dependency">12%</strong><span>Share of critical demand supplied by resupply</span></article>
+        </div>
+        <p class="formula-note"><button id="show-formula" type="button">How is readiness calculated?</button></p>
+      </section>
+
+      <section class="panel resource-panel">
+        <div class="panel-heading"><div><p class="section-number">CAPACITY</p><h2>Resource balance</h2></div><span class="legend"><i></i>Demand line</span></div>
+        <div id="resource-bars" class="resource-bars"></div>
+        <div class="balance-explainer"><span>Local output</span><span>Earth support</span><span>Inventory buffer</span></div>
+      </section>
+    </section>
+
+    <section class="recommendation" id="recommendation" aria-live="polite">
+      <div class="recommendation-status"><p class="section-number">PHASE RECOMMENDATION</p><span class="recommendation-badge" id="recommendation-badge">HOLD</span></div>
+      <div><h2 id="recommendation-title">Stabilize food supply before expanding</h2><p id="recommendation-text">The colony is viable at the current population, but local food output is the limiting system. Keep population steady while adding food capacity or a larger buffer.</p></div>
+      <div class="next-gate"><span>Next operating gate</span><strong id="next-gate">Local food at 75%+</strong></div>
+    </section>
+
+    <section class="about" aria-labelledby="about-title">
+      <p class="eyebrow">About this prototype</p>
+      <h2 id="about-title">Built for the Texas McCombs Operations Fellows Mars strategy exercise</h2>
+      <p>This tool turns a broad colonization question into a transparent operating model. It focuses on capacity, bottlenecks, buffers, resilience, and phased growth. The numbers are planning assumptions for decision testing. They are not a validated engineering or NASA mission model.</p>
+      <p class="ai-note"><strong>AI use:</strong> AI helped structure the operating variables, challenge assumptions, and build the simulator. Scenario testing was then used to refine the recommendation logic.</p>
+    </section>
+  </main>
+
+  <dialog id="assumptions-dialog">
+    <div class="dialog-head"><div><p class="eyebrow">Transparent model</p><h2>Model assumptions and formulas</h2></div><button class="close-button" type="button" aria-label="Close assumptions">Close</button></div>
+    <div class="assumption-grid">
+      <section><h3>Planning basis</h3><ul><li>Base demand is normalized to a 20-person colony.</li><li>Water starts with full local production plus a recycle allowance.</li><li>Food uses a mix of local production and scheduled Earth supply.</li><li>Power demand includes a 10% operating reserve.</li><li>Inventory protects deficits until the next resupply arrives.</li></ul></section>
+      <section><h3>Core formulas</h3><dl><dt>Demand</dt><dd>Base demand × population ÷ 20</dd><dt>Safety margin</dt><dd>(available capacity − demand) ÷ demand</dd><dt>Days to shortage</dt><dd>usable inventory ÷ daily resource deficit</dd><dt>Earth dependency</dt><dd>Earth-supplied critical demand ÷ total critical demand</dd></dl></section>
+      <section><h3>Readiness score</h3><p>The score is illustrative. The weights are visible so the result can be challenged.</p><dl><dt>Capacity coverage</dt><dd>45%</dd><dt>Inventory runway</dt><dd>25%</dd><dt>Power resilience</dt><dd>20%</dd><dt>Low Earth dependency</dt><dd>10%</dd></dl></section>
+      <section><h3>Decision thresholds</h3><dl><dt>Expand</dt><dd>Readiness 80+, all margins at least 15%, runway covers the resupply interval.</dd><dt>Hold</dt><dd>Readiness 55–79 or a margin is below 15%.</dd><dt>Critical</dt><dd>Readiness below 55, capacity below demand, or runway is shorter than the active delay.</dd></dl></section>
+    </div>
+    <p class="science-note">This is an operations simulation for an MBA fellowship application. It is not an engineering certification model.</p>
+  </dialog>
+
+  <dialog id="formula-dialog">
+    <div class="dialog-head"><h2>Readiness score</h2><button class="close-button" type="button" aria-label="Close formula">Close</button></div>
+    <p>Readiness combines four explainable components: capacity coverage (45%), inventory runway (25%), power resilience (20%), and low Earth dependency (10%). Each component is capped at 100 before weighting.</p>
+  </dialog>
+  <script src="script.js"></script>
+</body>
+</html>
+
