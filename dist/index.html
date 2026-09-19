@@ -1,0 +1,247 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="An interactive Mars colony operations simulator for testing capacity, buffers, failures, and resupply risk.">
+  <title>Mars Operations Control</title>
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%23110e0d'/%3E%3Ccircle cx='32' cy='32' r='19' fill='%23c75832'/%3E%3Cpath d='M17 34c9-5 20-7 31-4M22 20c7 4 13 5 22 4M26 48c3-5 8-8 15-11' fill='none' stroke='%23f2c29e' stroke-width='3' stroke-linecap='round' opacity='.8'/%3E%3C/svg%3E">
+  <link rel="stylesheet" href="styles.css?v=4">
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand"><span class="brand-mark" aria-hidden="true"></span><span>MARS // OPERATIONS CONTROL</span></div>
+    <div class="header-actions">
+      <span class="model-label">Illustrative operations model</span>
+      <button class="guide-button" id="open-guide" type="button">How it works</button>
+      <button class="text-button" id="open-assumptions" type="button">Model assumptions</button>
+    </div>
+  </header>
+
+  <main>
+    <section class="intro" aria-labelledby="page-title">
+      <div>
+        <p class="eyebrow">Colony decision simulator</p>
+        <h1 id="page-title">How many people can Mars support before the system breaks?</h1>
+      </div>
+      <p class="intro-copy">Adjust the operating plan. The model will identify the first constraint, estimate the runway, and recommend whether to expand, hold, or stabilize.</p>
+    </section>
+
+    <nav class="scenario-tabs" aria-label="Operating scenario">
+      <button class="scenario active" type="button" data-scenario="normal" aria-pressed="true"><span>01</span> Normal operations</button>
+      <button class="scenario" type="button" data-scenario="delay" aria-pressed="false"><span>02</span> Resupply delayed</button>
+      <button class="scenario" type="button" data-scenario="failure" aria-pressed="false"><span>03</span> System failure</button>
+      <button class="scenario" type="button" data-scenario="expansion" aria-pressed="false"><span>04</span> Population expansion</button>
+    </nav>
+
+    <section class="dashboard" aria-label="Mars colony operations dashboard">
+      <aside class="panel controls-panel">
+        <div class="panel-heading">
+          <div><p class="section-number">CONTROL</p><h2>Operating inputs</h2></div>
+          <button id="reset" class="icon-button" type="button" aria-label="Reset inputs">Reset</button>
+        </div>
+
+        <div class="control-group">
+          <div class="control-label"><label for="population">Colony population</label><output id="population-output" for="population">20 people</output></div>
+          <input id="population" type="range" min="8" max="80" value="20" step="1">
+          <div class="range-ends"><span>8</span><span>80</span></div>
+        </div>
+
+        <div class="control-group">
+          <div class="control-label"><label for="water">Water system capacity</label><output id="water-output" for="water">110%</output></div>
+          <input id="water" type="range" min="30" max="160" value="110" step="5">
+          <div class="range-ends"><span>30%</span><span>160%</span></div>
+        </div>
+
+        <div class="control-group">
+          <div class="control-label"><label for="food">Food system capacity</label><output id="food-output" for="food">55%</output></div>
+          <input id="food" type="range" min="20" max="140" value="55" step="5">
+          <div class="range-ends"><span>20%</span><span>140%</span></div>
+        </div>
+
+        <div class="control-group">
+          <div class="control-label"><label for="power">Power capacity</label><output id="power-output" for="power">125%</output></div>
+          <input id="power" type="range" min="50" max="180" value="125" step="5">
+          <div class="range-ends"><span>50%</span><span>180%</span></div>
+        </div>
+
+        <div class="two-controls">
+          <div><label for="buffer">Inventory buffer</label><div class="input-unit"><input id="buffer" type="number" min="7" max="240" value="75"><span>days</span></div></div>
+          <div><label for="resupply">Resupply interval</label><div class="input-unit"><input id="resupply" type="number" min="30" max="360" value="120"><span>days</span></div></div>
+        </div>
+
+        <div class="failure-control" id="failure-control" hidden>
+          <label for="failed-system">System under stress</label>
+          <select id="failed-system"><option value="water">Water extraction</option><option value="food">Food production</option><option value="power">Power generation</option></select>
+          <div class="control-label compact"><label for="failure-severity">Remaining output</label><output id="failure-output" for="failure-severity">25%</output></div>
+          <input id="failure-severity" type="range" min="0" max="60" value="25" step="5">
+        </div>
+      </aside>
+
+      <section class="panel metrics-panel">
+        <div class="panel-heading"><div><p class="section-number">STATUS</p><h2>Colony outlook</h2></div><span class="scenario-chip" id="scenario-chip">Normal operations</span></div>
+        <div class="readiness-block">
+          <div class="score-ring" id="score-ring"><div><strong id="readiness">78</strong><span>/ 100</span></div></div>
+          <div><p class="metric-label">Operational readiness</p><p class="score-note" id="score-note">Weighted view of capacity, runway, and Earth dependency.</p></div>
+        </div>
+        <div class="metric-grid">
+          <article><p class="metric-label">First bottleneck</p><strong id="bottleneck">Food</strong><span id="bottleneck-detail">45% supplied from Earth</span></article>
+          <article><p class="metric-label">Days to shortage</p><strong id="runway">167</strong><span id="runway-detail">Inventory runway under current plan</span></article>
+          <article><p class="metric-label">Power utilization</p><strong id="power-util">80%</strong><span id="power-detail">20% headroom</span></article>
+          <article><p class="metric-label">Earth dependency</p><strong id="earth-dependency">12%</strong><span>Share of critical demand supplied by resupply</span></article>
+        </div>
+        <p class="formula-note"><button id="show-formula" type="button">How is readiness calculated?</button></p>
+      </section>
+
+      <section class="panel resource-panel">
+        <div class="panel-heading"><div><p class="section-number">CAPACITY</p><h2>Resource balance</h2></div><span class="legend"><i></i>Demand line</span></div>
+        <div id="resource-bars" class="resource-bars"></div>
+        <div class="balance-explainer"><span>Local output</span><span>Earth support</span><span>Inventory buffer</span></div>
+      </section>
+    </section>
+
+    <section class="recommendation" id="recommendation" aria-live="polite">
+      <div class="recommendation-status"><p class="section-number">PHASE RECOMMENDATION</p><span class="recommendation-badge" id="recommendation-badge">HOLD</span></div>
+      <div><h2 id="recommendation-title">Stabilize food supply before expanding</h2><p id="recommendation-text">The colony is viable at the current population, but local food output is the limiting system. Keep population steady while adding food capacity or a larger buffer.</p></div>
+      <div class="next-gate"><span>Next operating gate</span><strong id="next-gate">Local food at 75%+</strong></div>
+    </section>
+
+    <section class="about" aria-labelledby="about-title">
+      <p class="eyebrow">About this prototype</p>
+      <h2 id="about-title">Built for the Texas McCombs Operations Fellows Mars strategy exercise</h2>
+    </section>
+  </main>
+
+  <dialog id="guide-dialog" class="guide-dialog">
+    <div class="dialog-head"><div><p class="eyebrow">Simple walkthrough</p><h2>How this website works</h2><p class="dialog-subtitle">No Mars or operations knowledge needed</p></div><button class="close-button" type="button" aria-label="Close instructions">Close</button></div>
+    <div class="guide-intro">
+      <p class="guide-big-idea"><strong>You are the manager of a Mars colony.</strong> Your job is to keep everyone supplied with water, food, and power.</p>
+      <p>This website is a simple “what if?” tool. You change the colony plan. The website shows what may go wrong first and what you should do next.</p>
+    </div>
+
+    <section class="guide-section" aria-labelledby="guide-flow-title">
+      <p class="guide-kicker">Section 1</p><h3 id="guide-flow-title">The whole website in one picture</h3>
+      <div class="flow-diagram detailed" role="img" aria-label="More people need more water, food, and power. Mars systems and Earth deliveries create supply. Inventory provides emergency backup. The simulator compares supply with demand, finds the weakest resource, and recommends expand, hold, or critical.">
+        <div class="flow-node"><span>INPUT</span><strong>More people</strong><small>means more daily need</small></div><div class="flow-arrow" aria-hidden="true">→</div>
+        <div class="flow-node sources"><span>SUPPLY</span><strong>Mars + Earth</strong><small>produce or deliver resources</small></div><div class="flow-arrow" aria-hidden="true">→</div>
+        <div class="flow-node"><span>CHECK</span><strong>Supply vs need</strong><small>plus emergency inventory</small></div><div class="flow-arrow" aria-hidden="true">→</div>
+        <div class="flow-node result"><span>DECISION</span><strong>What next?</strong><small>expand, hold, or stabilize</small></div>
+      </div>
+      <p class="plain-example"><strong>Simple example:</strong> If 20 people need 100 units of food, but the colony only has 80 units available, food is short by 20%. Food becomes the bottleneck.</p>
+    </section>
+
+    <section class="guide-section">
+      <p class="guide-kicker">Section 2</p><h3>How to use it in four steps</h3>
+      <ol class="guide-steps">
+        <li><strong>Choose a situation to test.</strong><p>Click one of the four scenario tabs. Begin with <em>Normal operations</em>.</p></li>
+        <li><strong>Change one assumption.</strong><p>Move a slider. For example, raise the population from 20 to 35 people.</p></li>
+        <li><strong>Watch the results change.</strong><p>The numbers and resource bars update immediately. No Calculate button is needed.</p></li>
+        <li><strong>Read the recommendation.</strong><p>The bottom panel tells you whether to expand, hold, or stabilize, and explains why.</p></li>
+      </ol>
+    </section>
+
+    <section class="guide-section">
+      <p class="guide-kicker">Section 3</p><h3>What each control means</h3>
+      <div class="control-guide-grid">
+        <article><strong>Colony population</strong><p>How many people live on Mars. More people increase water, food, and power demand.</p><small>Try: 20 → 40 people</small></article>
+        <article><strong>Water system capacity</strong><p>How much water the colony can extract and recycle compared with the original plan.</p><small>100% = planned output</small></article>
+        <article><strong>Food system capacity</strong><p>How much food is grown locally. Any missing food may need to come from Earth.</p><small>55% = 55 of every 100 units</small></article>
+        <article><strong>Power capacity</strong><p>How much electricity the colony can produce. The model also keeps a small operating reserve.</p><small>Higher capacity = more headroom</small></article>
+        <article><strong>Inventory buffer</strong><p>Emergency supplies already stored on Mars. A larger buffer gives the colony more time during trouble.</p><small>75 days = 75 days at full demand</small></article>
+        <article><strong>Resupply interval</strong><p>How often supplies arrive from Earth. Longer intervals mean the colony must survive longer on its own.</p><small>120 days = one delivery every 120 days</small></article>
+      </div>
+    </section>
+
+    <section class="guide-section">
+      <p class="guide-kicker">Section 4</p><h3>What the four scenarios mean</h3>
+      <div class="scenario-guide">
+        <article><span>01</span><div><strong>Normal operations</strong><p>Everything works as planned. Use this as your starting point.</p></div></article>
+        <article><span>02</span><div><strong>Resupply delayed</strong><p>The next Earth delivery does not arrive on time. The model removes that delivery and checks how long stored supplies last.</p></div></article>
+        <article><span>03</span><div><strong>System failure</strong><p>Water, food, or power output suddenly drops. Choose the failed system and how much output remains.</p></div></article>
+        <article><span>04</span><div><strong>Population expansion</strong><p>The colony grows to 45 people. This quickly tests whether today’s systems can support a larger population.</p></div></article>
+      </div>
+    </section>
+
+    <section class="guide-section guide-reading">
+      <p class="guide-kicker">Section 5</p><h3>How to read the resource bars</h3>
+      <div class="bar-guide"><div class="mini-bar" aria-hidden="true"><span class="mini-local"></span><span class="mini-earth"></span><i></i></div><div><p><strong>Dark orange:</strong> resource produced on Mars</p><p><strong>Light orange:</strong> resource supplied by Earth</p><p><strong>White line:</strong> total demand that must be met</p></div></div>
+      <div class="percent-examples"><div><strong>112%</strong><span>Supply is 12% above demand</span><b class="good">Enough</b></div><div><strong>100%</strong><span>Supply exactly matches demand</span><b class="tight">No cushion</b></div><div><strong>62%</strong><span>Supply covers only 62% of demand</span><b class="bad">38% short</b></div></div>
+      <p>The resource with the smallest margin is the <strong>bottleneck</strong>. It is the first resource you should improve.</p>
+    </section>
+
+    <section class="guide-section">
+      <p class="guide-kicker">Section 6</p><h3>How to understand the results</h3>
+      <div class="result-guide-grid">
+        <article><strong>Readiness score</strong><p>A quick 0–100 summary. Higher is better. It combines capacity, inventory, power resilience, and reliance on Earth.</p></article>
+        <article><strong>First bottleneck</strong><p>The weakest resource. Fix this first because it limits the whole colony.</p></article>
+        <article><strong>Days to shortage</strong><p>How many days remain before stored supplies run out when there is a daily deficit.</p></article>
+        <article><strong>Power utilization</strong><p>How much of power capacity is being used. More than 100% means demand is greater than supply.</p></article>
+        <article><strong>Earth dependency</strong><p>The share of critical daily needs that still relies on deliveries from Earth.</p></article>
+        <article><strong>Recommendation</strong><p>The action suggested by the model: Expand, Hold, or Critical.</p></article>
+      </div>
+    </section>
+
+    <section class="guide-section worked-example">
+      <p class="guide-kicker">Section 7</p><h3>A complete example</h3>
+      <div class="example-story">
+        <div><span>START</span><strong>20 people</strong><p>Local food supplies 55% of demand. Earth normally supplies the remaining 45%.</p></div>
+        <div class="example-arrow" aria-hidden="true">→</div>
+        <div><span>PROBLEM</span><strong>Earth delivery is late</strong><p>The 45% Earth contribution disappears. Only 55% of daily food demand is available.</p></div>
+        <div class="example-arrow" aria-hidden="true">→</div>
+        <div><span>RESULT</span><strong>Food is 45% short</strong><p>A 75-day full-demand inventory lasts about 167 days when it fills a 45% daily gap.</p></div>
+        <div class="example-arrow" aria-hidden="true">→</div>
+        <div><span>DECISION</span><strong>Do not expand yet</strong><p>Increase local food production, increase stored food, or shorten the resupply interval.</p></div>
+      </div>
+    </section>
+
+    <section class="guide-section first-test">
+      <p class="guide-kicker">Section 8</p><h3>Try this 60-second test</h3>
+      <ol><li>Leave the population at 20.</li><li>Click <strong>Resupply delayed</strong>.</li><li>Find the first bottleneck.</li><li>Notice the days-to-shortage number.</li><li>Raise local food capacity and watch the recommendation improve.</li></ol>
+    </section>
+
+    <section class="guide-section math-guide">
+      <p class="guide-kicker">Section 9</p><h3>The math and decision logic</h3>
+      <p>You can understand the model with six simple calculations. The website repeats these calculations every time you move a slider.</p>
+      <div class="math-steps">
+        <article><span>1</span><div><strong>Calculate what people need</strong><p><code>Demand = base demand × population ÷ 20</code></p><p>The starting plan is for 20 people. If population doubles from 20 to 40, demand doubles.</p><small>Example: food demand 20 × 40 ÷ 20 = 40 units.</small></div></article>
+        <article><span>2</span><div><strong>Calculate supply available today</strong><p><code>Available supply = local production + Earth delivery</code></p><p>Local production comes from the capacity sliders. Earth normally covers 2% of water demand and 45% of food demand. A delayed-resupply scenario removes the current Earth delivery.</p><small>Example: 55 local food units + 45 Earth units = 100 available units.</small></div></article>
+        <article><span>3</span><div><strong>Find the safety margin</strong><p><code>Safety margin = (available supply − demand) ÷ demand</code></p><p>A positive number means extra capacity. Zero means supply just meets demand. A negative number means shortage.</p><small>Example: (112 − 100) ÷ 100 = 12% extra capacity.</small></div></article>
+        <article><span>4</span><div><strong>Find how long inventory lasts</strong><p><code>Days to shortage = stored inventory ÷ daily deficit</code></p><p>The deficit is the part of daily demand that supply cannot cover. Inventory fills that gap until it runs out.</p><small>Example: a 75-day full-demand food buffer covering a 45% daily gap lasts 75 ÷ 0.45 ≈ 167 days.</small></div></article>
+        <article><span>5</span><div><strong>Find the bottleneck</strong><p><code>Bottleneck = resource with the smallest safety margin</code></p><p>The model compares water, food, and power. The lowest margin is the weakest link.</p><small>Example: water +12%, food 0%, power +14% → food is the bottleneck.</small></div></article>
+        <article><span>6</span><div><strong>Measure reliance on Earth</strong><p><code>Earth dependency = planned Earth supply ÷ total critical demand</code></p><p>This combines the Earth-supported share of water, food, and power. A lower percentage means the colony is more self-sufficient.</p><small>The result is a share of total daily critical-resource demand.</small></div></article>
+      </div>
+      <div class="score-explanation">
+        <h4>How the readiness score is built</h4>
+        <p>The score is a transparent planning aid, not a scientific rating. Each component receives a 0–100 score, then the model applies these weights:</p>
+        <div class="weight-bar" role="img" aria-label="Readiness score weights: capacity coverage 45 percent, inventory runway 25 percent, power resilience 20 percent, and low Earth dependency 10 percent"><span class="w-capacity">45% Capacity</span><span class="w-runway">25% Runway</span><span class="w-power">20% Power</span><span class="w-earth">10% Earth</span></div>
+        <p class="score-formula"><code>Readiness = capacity × 45% + runway × 25% + power resilience × 20% + low Earth dependency × 10%</code></p>
+        <ul><li><strong>Capacity coverage:</strong> uses the weakest resource’s available supply compared with demand.</li><li><strong>Inventory runway:</strong> compares days to shortage with the time until resupply.</li><li><strong>Power resilience:</strong> rewards unused power headroom and penalizes overload.</li><li><strong>Low Earth dependency:</strong> rewards greater self-sufficiency.</li></ul>
+      </div>
+      <div class="decision-logic">
+        <h4>How the final recommendation is chosen</h4>
+        <div class="decision-cards"><article class="decision-expand"><strong>EXPAND</strong><p>Readiness is at least 80, every resource has at least 15% spare capacity, and inventory covers the operating interval.</p></article><article class="decision-hold"><strong>HOLD</strong><p>The colony can continue, but one or more expansion tests are not yet strong enough. Improve the bottleneck first.</p></article><article class="decision-critical"><strong>CRITICAL</strong><p>Readiness is below 55, power demand exceeds production, or inventory runs out before a delayed delivery arrives.</p></article></div>
+        <p><strong>Important:</strong> Critical always overrides the other recommendations. The same inputs always produce the same answer.</p>
+      </div>
+    </section>
+    <p class="science-note">The model is a simple decision tool for comparing operating choices. It is not a scientifically validated Mars mission plan.</p>
+  </dialog>
+
+  <dialog id="assumptions-dialog">
+    <div class="dialog-head"><div><p class="eyebrow">Transparent model</p><h2>Model assumptions and formulas</h2></div><button class="close-button" type="button" aria-label="Close assumptions">Close</button></div>
+    <div class="assumption-grid">
+      <section><h3>Planning basis</h3><ul><li>Base demand is normalized to a 20-person colony.</li><li>Water starts with full local production plus a recycle allowance.</li><li>Food uses a mix of local production and scheduled Earth supply.</li><li>Power demand includes a 10% operating reserve.</li><li>Inventory protects deficits until the next resupply arrives.</li></ul></section>
+      <section><h3>Core formulas</h3><dl><dt>Demand</dt><dd>Base demand × population ÷ 20</dd><dt>Safety margin</dt><dd>(available capacity − demand) ÷ demand</dd><dt>Days to shortage</dt><dd>usable inventory ÷ daily resource deficit</dd><dt>Earth dependency</dt><dd>Earth-supplied critical demand ÷ total critical demand</dd></dl></section>
+      <section><h3>Readiness score</h3><p>The score is illustrative. The weights are visible so the result can be challenged.</p><dl><dt>Capacity coverage</dt><dd>45%</dd><dt>Inventory runway</dt><dd>25%</dd><dt>Power resilience</dt><dd>20%</dd><dt>Low Earth dependency</dt><dd>10%</dd></dl></section>
+      <section><h3>Decision thresholds</h3><dl><dt>Expand</dt><dd>Readiness 80+, all margins at least 15%, runway covers the resupply interval.</dd><dt>Hold</dt><dd>Readiness 55–79 or a margin is below 15%.</dd><dt>Critical</dt><dd>Readiness below 55, capacity below demand, or runway is shorter than the active delay.</dd></dl></section>
+    </div>
+    <p class="science-note">This is an operations simulation for an MBA fellowship application. It is not an engineering certification model.</p>
+  </dialog>
+
+  <dialog id="formula-dialog">
+    <div class="dialog-head"><h2>Readiness score</h2><button class="close-button" type="button" aria-label="Close formula">Close</button></div>
+    <p>Readiness combines four explainable components: capacity coverage (45%), inventory runway (25%), power resilience (20%), and low Earth dependency (10%). Each component is capped at 100 before weighting.</p>
+  </dialog>
+  <script src="script.js?v=4"></script>
+</body>
+</html>
+
