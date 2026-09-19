@@ -13,6 +13,7 @@
     <div class="brand"><span class="brand-mark" aria-hidden="true"></span><span>MARS // OPERATIONS CONTROL</span></div>
     <div class="header-actions">
       <span class="model-label">Illustrative operations model</span>
+      <button class="guide-button" id="open-guide" type="button">How it works</button>
       <button class="text-button" id="open-assumptions" type="button">Model assumptions</button>
     </div>
   </header>
@@ -112,6 +113,43 @@
       <p class="ai-note"><strong>AI use:</strong> AI helped structure the operating variables, challenge assumptions, and build the simulator. Scenario testing was then used to refine the recommendation logic.</p>
     </section>
   </main>
+
+  <dialog id="guide-dialog" class="guide-dialog">
+    <div class="dialog-head"><div><p class="eyebrow">Start here</p><h2>How to use this Mars colony simulator</h2></div><button class="close-button" type="button" aria-label="Close instructions">Close</button></div>
+    <div class="guide-intro">
+      <h3>What is this website for?</h3>
+      <p>Imagine you manage a small colony on Mars. Every person needs water, food, and power every day. Some supplies are produced on Mars. Others arrive from Earth. This simulator helps you test whether the colony can support its population, survive a delay or failure, and safely grow.</p>
+      <p>You do not need technical knowledge. Change one input, then watch the results update immediately.</p>
+    </div>
+    <section class="guide-section" aria-labelledby="guide-flow-title">
+      <h3 id="guide-flow-title">The basic idea</h3>
+      <div class="flow-diagram" role="img" aria-label="Population creates demand. Mars production and Earth resupply provide capacity. The simulator compares them to find the bottleneck and recommendation.">
+        <div class="flow-node"><span>1</span><strong>People</strong><small>Create daily demand</small></div><div class="flow-arrow" aria-hidden="true">→</div>
+        <div class="flow-node sources"><span>2</span><strong>Mars + Earth</strong><small>Provide resources</small></div><div class="flow-arrow" aria-hidden="true">→</div>
+        <div class="flow-node"><span>3</span><strong>Compare</strong><small>Find the weakest resource</small></div><div class="flow-arrow" aria-hidden="true">→</div>
+        <div class="flow-node result"><span>4</span><strong>Decide</strong><small>Expand, hold, or stabilize</small></div>
+      </div>
+    </section>
+    <section class="guide-section">
+      <h3>Use it in four simple steps</h3>
+      <ol class="guide-steps">
+        <li><strong>Choose a scenario.</strong><p>Start with Normal operations. Then try a delayed delivery, a failed production system, or a larger population.</p></li>
+        <li><strong>Change the operating inputs.</strong><p>Move the sliders for population, water, food, and power. You can also change the inventory buffer and time between Earth deliveries.</p></li>
+        <li><strong>Read the live results.</strong><p>Colony outlook shows the readiness score, first bottleneck, days to shortage, power use, and reliance on Earth.</p></li>
+        <li><strong>Follow the phase recommendation.</strong><p>Expand means there is enough headroom. Hold means improve the weakest area before growing. Critical means stabilize the colony immediately.</p></li>
+      </ol>
+    </section>
+    <section class="guide-section guide-reading">
+      <h3>How to read the resource bars</h3>
+      <div class="bar-guide"><div class="mini-bar" aria-hidden="true"><span class="mini-local"></span><span class="mini-earth"></span><i></i></div><div><p><strong>Dark orange:</strong> resource produced on Mars</p><p><strong>Light orange:</strong> resource supplied by Earth</p><p><strong>White line:</strong> total demand that must be met</p></div></div>
+      <p>The percentage on the right compares available supply with demand. Above 100% means supply covers demand. Below 100% means there is a deficit. The sentence below each bar states the margin or shortage.</p>
+    </section>
+    <section class="guide-section">
+      <h3>What should you try first?</h3>
+      <p>Use Normal operations as your baseline. Next, click Resupply delayed and see which resource runs out first. Then select System failure and test water, food, or power. Finally, increase the population until the recommendation changes.</p>
+    </section>
+    <p class="science-note">The model is a simple decision tool for comparing operating choices. It is not a scientifically validated Mars mission plan.</p>
+  </dialog>
 
   <dialog id="assumptions-dialog">
     <div class="dialog-head"><div><p class="eyebrow">Transparent model</p><h2>Model assumptions and formulas</h2></div><button class="close-button" type="button" aria-label="Close assumptions">Close</button></div>
