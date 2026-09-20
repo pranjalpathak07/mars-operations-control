@@ -2,7 +2,7 @@
 
 const CONFIG = {
   basePopulation: 20,
-  baseDemand: { water: 20, food: 20, power: 22 },
+  baseDemand: { water: 20, food: 20, power: 20 },
   localScale: { water: 1, food: 1, power: 1 },
   earthShare: { water: 0.02, food: 0.45, power: 0 },
   powerReserve: 1.10,
