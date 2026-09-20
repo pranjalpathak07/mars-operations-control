@@ -8,7 +8,6 @@ const CONFIG = {
   inventoryDays: { water: 1, food: 1, power: 0.2 },
   powerReserve: 1.10,
   delayedResupplyDays: 90,
-  weights: { capacity: 0.45, runway: 0.25, power: 0.20, dependency: 0.10 }
 };
 
 const defaults = { population: 20, water: 110, food: 55, power: 125, buffer: 75, resupply: 120, failedSystem: "water", failureSeverity: 25 };
@@ -43,22 +42,18 @@ function calculate() {
   const bottleneckKey = Object.keys(resources).sort((a,b) => resources[a].margin - resources[b].margin)[0];
   const bottleneck = resources[bottleneckKey];
   const minCoverage = Math.min(...Object.values(resources).map(r => r.available / r.demand));
+  const lowestCoverage = round(minCoverage * 100);
   const minRunway = Math.min(...Object.values(resources).filter(r => r.deficit > 0).map(r => r.runway).concat([999]));
   const totalDemand = Object.values(resources).reduce((s,r) => s + r.demand, 0);
   const earthDemand = Object.values(resources).reduce((s,r) => s + r.plannedEarth, 0);
   const dependency = earthDemand / totalDemand;
   const powerUtil = resources.power.demand / Math.max(resources.power.local, .01);
-  const capacityScore = clamp(minCoverage, 0, 1) * 100;
-  const runwayTarget = effectiveInterval;
-  const runwayScore = minRunway === 999 ? 100 : clamp(minRunway / runwayTarget, 0, 1) * 100;
-  const powerScore = clamp(1.25 - powerUtil, 0, 1) * 100;
-  const dependencyScore = clamp(1 - dependency * 2, 0, 1) * 100;
-  const readiness = round(capacityScore * CONFIG.weights.capacity + runwayScore * CONFIG.weights.runway + powerScore * CONFIG.weights.power + dependencyScore * CONFIG.weights.dependency);
 
-  let phase = "HOLD";
-  if (readiness >= 80 && bottleneck.margin >= .15 && (minRunway === 999 || minRunway >= effectiveInterval)) phase = "EXPAND";
-  if (readiness < 55 || minRunway < delay || powerUtil > 1) phase = "CRITICAL";
-  return { resources, bottleneckKey, bottleneck, minRunway, dependency, powerUtil, readiness, phase, effectiveInterval };
+  let phase = "CRITICAL";
+  if (minCoverage >= 1.10) phase = "EXPAND";
+  else if (minCoverage >= 1.00) phase = "HOLD";
+
+  return { resources, bottleneckKey, bottleneck, minRunway, dependency, powerUtil, lowestCoverage, phase, effectiveInterval };
 }
 
 function renderBars(model) {
@@ -79,17 +74,17 @@ function renderRecommendation(model) {
   $("recommendation-badge").textContent = model.phase;
   const b = names[model.bottleneckKey];
   if (model.phase === "EXPAND") {
-    $("recommendation-title").textContent = "Proceed to the next growth phase";
-    $("recommendation-text").textContent = `All critical systems have operating headroom. ${b} remains the narrowest margin, so scale in small steps and recheck after each increase.`;
-    $("next-gate").textContent = "Increase population by 10%";
+    $("recommendation-title").textContent = "Current systems can support growth";
+    $("recommendation-text").textContent = `Every critical resource is at least 110% covered. ${b} is still the weakest resource, so increase population in small steps and recheck the model.`;
+    $("next-gate").textContent = "Increase population gradually";
   } else if (model.phase === "CRITICAL") {
     $("recommendation-title").textContent = `Stabilize ${b.toLowerCase()} immediately`;
-    $("recommendation-text").textContent = `${b} cannot support the current plan. Reduce demand, restore production, or secure inventory before considering growth.`;
-    $("next-gate").textContent = `${b} capacity at 100%+`;
+    $("recommendation-text").textContent = `${b} supply is below current demand. Reduce demand, restore production, or use inventory while the shortage is fixed.`;
+    $("next-gate").textContent = `${b} coverage at 100%+`;
   } else {
     $("recommendation-title").textContent = `Strengthen ${b.toLowerCase()} before expanding`;
-    $("recommendation-text").textContent = `The current plan has limited resilience. Keep population steady while improving ${b.toLowerCase()} capacity, buffer, or resupply coverage.`;
-    $("next-gate").textContent = `${b} margin at 15%+`;
+    $("recommendation-text").textContent = `Current demand is covered, but the weakest resource has less than 10% spare capacity. Improve ${b.toLowerCase()} before growing the colony.`;
+    $("next-gate").textContent = `${b} coverage at 110%+`;
   }
 }
 
@@ -100,8 +95,9 @@ function render() {
   $("food-output").textContent = `${state.food}%`;
   $("power-output").textContent = `${state.power}%`;
   $("failure-output").textContent = `${state.failureSeverity}%`;
-  $("readiness").textContent = model.readiness;
-  $("score-ring").style.background = `conic-gradient(var(--orange) 0 ${model.readiness}%, #39271f ${model.readiness}%)`;
+  $("readiness").textContent = model.lowestCoverage;
+  const ringValue = clamp(model.lowestCoverage, 0, 100);
+  $("score-ring").style.background = `conic-gradient(var(--orange) 0 ${ringValue}%, #39271f ${ringValue}%)`;
   $("bottleneck").textContent = names[model.bottleneckKey];
   const earthShare = round(CONFIG.earthShare[model.bottleneckKey] * 100);
   $("bottleneck-detail").textContent = earthShare ? `${earthShare}% planned Earth support` : `${round(model.bottleneck.margin*100)}% operating margin`;
@@ -155,7 +151,7 @@ function registerWebMCP() {
     description: "Set Mars colony operating inputs and scenario, then return the updated decision result.",
     inputSchema: { type: "object", properties: { population:{type:"number",minimum:8,maximum:80}, scenario:{type:"string",enum:["normal","delay","failure","expansion"]}, water:{type:"number",minimum:30,maximum:160}, food:{type:"number",minimum:20,maximum:140}, power:{type:"number",minimum:50,maximum:180} }, additionalProperties:false },
     annotations: { readOnlyHint:false, untrustedContentHint:false },
-    execute(input) { for (const key of ["population","water","food","power"]) if (input[key] != null) { state[key]=input[key]; $(key).value=input[key]; } if (input.scenario) state.scenario=input.scenario; render(); const m=calculate(); return { readiness:m.readiness, phase:m.phase, bottleneck:names[m.bottleneckKey], daysToShortage:m.minRunway===999?null:round(m.minRunway) }; }
+    execute(input) { for (const key of ["population","water","food","power"]) if (input[key] != null) { state[key]=input[key]; $(key).value=input[key]; } if (input.scenario) state.scenario=input.scenario; render(); const m=calculate(); return { lowestCoverage:m.lowestCoverage, phase:m.phase, bottleneck:names[m.bottleneckKey], daysToShortage:m.minRunway===999?null:round(m.minRunway) }; }
   });
 }
 

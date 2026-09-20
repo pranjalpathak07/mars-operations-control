@@ -81,8 +81,8 @@
       <section class="panel metrics-panel">
         <div class="panel-heading"><div><p class="section-number">STATUS</p><h2>Colony outlook</h2></div><span class="scenario-chip" id="scenario-chip">Normal operations</span></div>
         <div class="readiness-block">
-          <div class="score-ring" id="score-ring"><div><strong id="readiness">78</strong><span>/ 100</span></div></div>
-          <div><p class="metric-label">Operational readiness</p><p class="score-note" id="score-note">Weighted view of capacity, runway, and Earth dependency.</p></div>
+          <div class="score-ring" id="score-ring"><div><strong id="readiness">78</strong><span>%</span></div></div>
+          <div><p class="metric-label">Lowest resource coverage</p><p class="score-note" id="score-note">Supply available for the weakest resource compared with current demand.</p></div>
         </div>
         <div class="metric-grid">
           <article><p class="metric-label">First bottleneck</p><strong id="bottleneck">Food</strong><span id="bottleneck-detail">45% supplied from Earth</span></article>
@@ -90,7 +90,7 @@
           <article><p class="metric-label">Power utilization</p><strong id="power-util">80%</strong><span id="power-detail">20% headroom</span></article>
           <article><p class="metric-label">Earth dependency</p><strong id="earth-dependency">12%</strong><span>Share of critical demand supplied by resupply</span></article>
         </div>
-        <p class="formula-note"><button id="show-formula" type="button">How is readiness calculated?</button></p>
+        <p class="formula-note"><button id="show-formula" type="button">How is the decision calculated?</button></p>
       </section>
 
       <section class="panel resource-panel">
@@ -172,7 +172,7 @@
     <section class="guide-section">
       <p class="guide-kicker">Section 6</p><h3>How to understand the results</h3>
       <div class="result-guide-grid">
-        <article><strong>Readiness score</strong><p>A quick 0–100 summary. Higher is better. It combines capacity, inventory, power resilience, and reliance on Earth.</p></article>
+        <article><strong>Lowest resource coverage</strong><p>The supply available for the weakest resource compared with current demand. Below 100% means there is a shortage.</p></article>
         <article><strong>First bottleneck</strong><p>The weakest resource. Fix this first because it limits the whole colony.</p></article>
         <article><strong>Days to shortage</strong><p>How many days remain before stored supplies run out when there is a daily deficit.</p></article>
         <article><strong>Power utilization</strong><p>How much of power capacity is being used. More than 100% means demand is greater than supply.</p></article>
@@ -200,27 +200,17 @@
     </section>
 
     <section class="guide-section math-guide">
-      <p class="guide-kicker">Section 9</p><h3>The math and decision logic</h3>
-      <p>You can understand the model with six simple calculations. The website repeats these calculations every time you move a slider.</p>
+      <p class="guide-kicker">Section 9</p><h3>The simple math and decision logic</h3>
+      <p>The model uses three main calculations.</p>
       <div class="math-steps">
-        <article><span>1</span><div><strong>Calculate what people need</strong><p><code>Demand = base demand × population ÷ 20</code></p><p>The starting plan is for 20 people. If population doubles from 20 to 40, demand doubles.</p><small>Example: food demand 20 × 40 ÷ 20 = 40 units.</small></div></article>
-        <article><span>2</span><div><strong>Calculate supply available today</strong><p><code>Available supply = local production + Earth delivery</code></p><p>Local production comes from the capacity sliders. Earth normally covers 2% of water demand and 45% of food demand. A delayed-resupply scenario removes the current Earth delivery.</p><small>Example: 55 local food units + 45 Earth units = 100 available units.</small></div></article>
-        <article><span>3</span><div><strong>Find the safety margin</strong><p><code>Safety margin = (available supply − demand) ÷ demand</code></p><p>A positive number means extra capacity. Zero means supply just meets demand. A negative number means shortage.</p><small>Example: (112 − 100) ÷ 100 = 12% extra capacity.</small></div></article>
-        <article><span>4</span><div><strong>Find how long inventory lasts</strong><p><code>Days to shortage = stored inventory ÷ daily deficit</code></p><p>The deficit is the part of daily demand that supply cannot cover. Inventory fills that gap until it runs out.</p><small>Example: a 75-day full-demand food buffer covering a 45% daily gap lasts 75 ÷ 0.45 ≈ 167 days.</small></div></article>
-        <article><span>5</span><div><strong>Find the bottleneck</strong><p><code>Bottleneck = resource with the smallest safety margin</code></p><p>The model compares water, food, and power. The lowest margin is the weakest link.</p><small>Example: water +12%, food 0%, power +14% → food is the bottleneck.</small></div></article>
-        <article><span>6</span><div><strong>Measure reliance on Earth</strong><p><code>Earth dependency = planned Earth supply ÷ total critical demand</code></p><p>This combines the Earth-supported share of water, food, and power. A lower percentage means the colony is more self-sufficient.</p><small>The result is a share of total daily critical-resource demand.</small></div></article>
-      </div>
-      <div class="score-explanation">
-        <h4>How the readiness score is built</h4>
-        <p>The score is a transparent planning aid, not a scientific rating. Each component receives a 0–100 score, then the model applies these weights:</p>
-        <div class="weight-bar" role="img" aria-label="Readiness score weights: capacity coverage 45 percent, inventory runway 25 percent, power resilience 20 percent, and low Earth dependency 10 percent"><span class="w-capacity">45% Capacity</span><span class="w-runway">25% Runway</span><span class="w-power">20% Power</span><span class="w-earth">10% Earth</span></div>
-        <p class="score-formula"><code>Readiness = capacity × 45% + runway × 25% + power resilience × 20% + low Earth dependency × 10%</code></p>
-        <ul><li><strong>Capacity coverage:</strong> uses the weakest resource’s available supply compared with demand.</li><li><strong>Inventory runway:</strong> compares days to shortage with the time until resupply.</li><li><strong>Power resilience:</strong> rewards unused power headroom and penalizes overload.</li><li><strong>Low Earth dependency:</strong> rewards greater self-sufficiency.</li></ul>
+        <article><span>1</span><div><strong>Resource coverage</strong><p><code>Coverage = available supply ÷ demand</code></p><p>100% means supply exactly meets demand. Below 100% means there is a shortage.</p></div></article>
+        <article><span>2</span><div><strong>Shortage</strong><p><code>Shortage = demand − available supply</code></p><p>If supply is enough, shortage is zero.</p></div></article>
+        <article><span>3</span><div><strong>Days to shortage</strong><p><code>Days to shortage = stored inventory ÷ daily shortage</code></p><p>This shows how long stored supplies can cover a daily deficit.</p></div></article>
       </div>
       <div class="decision-logic">
         <h4>How the final recommendation is chosen</h4>
-        <div class="decision-cards"><article class="decision-expand"><strong>EXPAND</strong><p>Readiness is at least 80, every resource has at least 15% spare capacity, and inventory covers the operating interval.</p></article><article class="decision-hold"><strong>HOLD</strong><p>The colony can continue, but one or more expansion tests are not yet strong enough. Improve the bottleneck first.</p></article><article class="decision-critical"><strong>CRITICAL</strong><p>Readiness is below 55, power demand exceeds production, or inventory runs out before a delayed delivery arrives.</p></article></div>
-        <p><strong>Important:</strong> Critical always overrides the other recommendations. The same inputs always produce the same answer.</p>
+        <div class="decision-cards"><article class="decision-expand"><strong>EXPAND</strong><p>Water, food, and power are each at least 110% covered.</p></article><article class="decision-hold"><strong>HOLD</strong><p>Every resource meets demand, but at least one resource has less than 10% spare capacity.</p></article><article class="decision-critical"><strong>CRITICAL</strong><p>At least one resource is below 100% coverage.</p></article></div>
+        <p>The weakest resource determines the colony status.</p>
       </div>
     </section>
     <p class="science-note">The model is a simple decision tool for comparing operating choices. It is not a scientifically validated Mars mission plan.</p>
@@ -231,15 +221,18 @@
     <div class="assumption-grid">
       <section><h3>Planning basis</h3><ul><li>Base demand is normalized to a 20-person colony.</li><li>Water starts with full local production plus a recycle allowance.</li><li>Food uses a mix of local production and scheduled Earth supply.</li><li>Power demand includes a 10% operating reserve.</li><li>Inventory protects deficits until the next resupply arrives.</li></ul></section>
       <section><h3>Core formulas</h3><dl><dt>Demand</dt><dd>Base demand × population ÷ 20</dd><dt>Safety margin</dt><dd>(available capacity − demand) ÷ demand</dd><dt>Days to shortage</dt><dd>usable inventory ÷ daily resource deficit</dd><dt>Earth dependency</dt><dd>Earth-supplied critical demand ÷ total critical demand</dd></dl></section>
-      <section><h3>Readiness score</h3><p>The score is illustrative. The weights are visible so the result can be challenged.</p><dl><dt>Capacity coverage</dt><dd>45%</dd><dt>Inventory runway</dt><dd>25%</dd><dt>Power resilience</dt><dd>20%</dd><dt>Low Earth dependency</dt><dd>10%</dd></dl></section>
-      <section><h3>Decision thresholds</h3><dl><dt>Expand</dt><dd>Readiness 80+, all margins at least 15%, runway covers the resupply interval.</dd><dt>Hold</dt><dd>Readiness 55–79 or a margin is below 15%.</dd><dt>Critical</dt><dd>Readiness below 55, capacity below demand, or runway is shorter than the active delay.</dd></dl></section>
+      <section><h3>Simple decision rule</h3><dl><dt>Expand</dt><dd>Every resource is at least 110% covered.</dd><dt>Hold</dt><dd>Every resource is at least 100% covered.</dd><dt>Critical</dt><dd>Any resource is below 100% coverage.</dd></dl></section>
+      <section><h3>Extra information</h3><p>Days to shortage shows how long inventory can cover a deficit. Earth dependency is shown as a separate information metric. Neither is part of a weighted score.</p></section>
     </div>
     <p class="science-note">This is an operations simulation for an MBA fellowship application. It is not an engineering certification model.</p>
   </dialog>
 
   <dialog id="formula-dialog">
-    <div class="dialog-head"><h2>Readiness score</h2><button class="close-button" type="button" aria-label="Close formula">Close</button></div>
-    <p>Readiness combines four explainable components: capacity coverage (45%), inventory runway (25%), power resilience (20%), and low Earth dependency (10%). Each component is capped at 100 before weighting.</p>
+    <div class="dialog-head"><h2>Decision logic</h2><button class="close-button" type="button" aria-label="Close formula">Close</button></div>
+    <p><strong>Expand:</strong> every resource is at least 110% covered.</p>
+    <p><strong>Hold:</strong> every resource is at least 100% covered.</p>
+    <p><strong>Critical:</strong> at least one resource is below 100% coverage.</p>
+    <p>The weakest resource determines the colony status.</p>
   </dialog>
   <script src="script.js?v=4"></script>
 </body>

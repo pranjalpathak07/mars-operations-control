@@ -14,11 +14,16 @@ Mars Operations Control is a one-page decision simulator built for the Texas McC
 The model normalizes daily demand to a 20-person colony. Demand changes in direct proportion to population. Power includes a 10% operating reserve.
 
 - `demand = base demand × population ÷ 20`
-- `safety margin = (available capacity - demand) ÷ demand`
-- `days to shortage = usable inventory ÷ daily deficit`
-- `Earth dependency = planned Earth-supplied demand ÷ total critical demand`
+- `resource coverage = available supply ÷ demand`
+- `shortage = demand - available supply`
+- `days to shortage = usable inventory ÷ daily shortage`
 
-The bottleneck is the resource with the smallest safety margin. Readiness combines capacity coverage (45%), inventory runway (25%), power resilience (20%), and low Earth dependency (10%). Component scores are capped at 100.
+The bottleneck is the resource with the lowest coverage. The decision rule is simple:
+- Expand when water, food, and power are each at least 110% covered.
+- Hold when every resource is at least 100% covered.
+- Critical when any resource is below 100% coverage.
+
+Earth dependency remains visible as a separate information metric. It is not part of a weighted score.
 
 ## Run locally
 
