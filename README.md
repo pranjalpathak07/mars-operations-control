@@ -1,11 +1,11 @@
 # Mars Operations Control
 
-Mars Operations Control is a one-page decision simulator built for the Texas McCombs Operations Fellows Mars strategy exercise. It lets a reviewer change population, local production, inventory, resupply, and failure assumptions. Outputs update immediately.
+Mars Operations Control is a one-page decision simulator built for the Texas McCombs Operations Fellows Mars strategy exercise. It lets a reviewer change population, local production, and failure assumptions. Outputs update immediately.
 
 ## Scenarios
 
 - Normal operations uses selected local capacities and planned resupply.
-- Resupply delayed removes the next Earth delivery and extends the operating interval by 90 days.
+- Resupply delayed removes the current Earth contribution and recalculates resource coverage.
 - System failure reduces one selected local production system to the chosen remaining output.
 - Population expansion raises the population to 45 as a quick stress test. The slider remains editable.
 
@@ -16,7 +16,6 @@ The model normalizes daily demand to a 20-person colony. Demand changes in direc
 - `demand = base demand × population ÷ 20`
 - `resource coverage = available supply ÷ demand`
 - `shortage = demand - available supply`
-- `days to shortage = usable inventory ÷ daily shortage`
 
 The bottleneck is the resource with the lowest coverage. The decision rule is simple:
 - Expand when water, food, and power are each at least 110% covered.

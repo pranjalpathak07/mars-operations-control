@@ -5,15 +5,13 @@ const CONFIG = {
   baseDemand: { water: 20, food: 20, power: 22 },
   localScale: { water: 1, food: 1, power: 1 },
   earthShare: { water: 0.02, food: 0.45, power: 0 },
-  inventoryDays: { water: 1, food: 1, power: 0.2 },
   powerReserve: 1.10,
-  delayedResupplyDays: 90,
 };
 
-const defaults = { population: 20, water: 110, food: 55, power: 125, buffer: 75, resupply: 120, failedSystem: "water", failureSeverity: 25 };
+const defaults = { population: 20, water: 110, food: 55, power: 125, failedSystem: "water", failureSeverity: 25 };
 const state = { ...defaults, scenario: "normal" };
 const $ = id => document.getElementById(id);
-const controls = ["population", "water", "food", "power", "buffer", "resupply", "failed-system", "failure-severity"];
+const controls = ["population", "water", "food", "power", "failed-system", "failure-severity"];
 const names = { water: "Water", food: "Food", power: "Power" };
 
 function clamp(value, min, max) { return Math.min(max, Math.max(min, value)); }
@@ -21,8 +19,6 @@ function round(value) { return Math.round(Number.isFinite(value) ? value : 0); }
 
 function calculate() {
   const popFactor = state.population / CONFIG.basePopulation;
-  const delay = state.scenario === "delay" ? CONFIG.delayedResupplyDays : 0;
-  const effectiveInterval = state.resupply + delay;
   const resources = {};
 
   for (const key of ["water", "food", "power"]) {
@@ -33,27 +29,25 @@ function calculate() {
     const earth = state.scenario === "delay" ? 0 : plannedEarth;
     const available = local + earth;
     const deficit = Math.max(0, demand - available);
-    const inventory = demand * CONFIG.inventoryDays[key] * state.buffer;
-    const runway = deficit > 0 ? inventory / deficit : 999;
     const margin = (available - demand) / demand;
-    resources[key] = { demand, local, earth, plannedEarth, available, deficit, inventory, runway, margin };
+    resources[key] = { demand, local, earth, plannedEarth, available, deficit, margin };
   }
 
   const bottleneckKey = Object.keys(resources).sort((a,b) => resources[a].margin - resources[b].margin)[0];
   const bottleneck = resources[bottleneckKey];
   const minCoverage = Math.min(...Object.values(resources).map(r => r.available / r.demand));
   const lowestCoverage = round(minCoverage * 100);
-  const minRunway = Math.min(...Object.values(resources).filter(r => r.deficit > 0).map(r => r.runway).concat([999]));
   const totalDemand = Object.values(resources).reduce((s,r) => s + r.demand, 0);
-  const earthDemand = Object.values(resources).reduce((s,r) => s + r.plannedEarth, 0);
+  const earthDemand = Object.values(resources).reduce((s,r) => s + r.earth, 0);
   const dependency = earthDemand / totalDemand;
   const powerUtil = resources.power.demand / Math.max(resources.power.local, .01);
+  const bottleneckShortage = round((bottleneck.deficit / bottleneck.demand) * 100);
 
   let phase = "CRITICAL";
   if (minCoverage >= 1.10) phase = "EXPAND";
   else if (minCoverage >= 1.00) phase = "HOLD";
 
-  return { resources, bottleneckKey, bottleneck, minRunway, dependency, powerUtil, lowestCoverage, phase, effectiveInterval };
+  return { resources, bottleneckKey, bottleneck, bottleneckShortage, dependency, powerUtil, lowestCoverage, phase };
 }
 
 function renderBars(model) {
@@ -79,7 +73,7 @@ function renderRecommendation(model) {
     $("next-gate").textContent = "Increase population gradually";
   } else if (model.phase === "CRITICAL") {
     $("recommendation-title").textContent = `Stabilize ${b.toLowerCase()} immediately`;
-    $("recommendation-text").textContent = `${b} supply is below current demand. Reduce demand, restore production, or use inventory while the shortage is fixed.`;
+    $("recommendation-text").textContent = `${b} supply is below current demand. Reduce demand or restore production before considering growth.`;
     $("next-gate").textContent = `${b} coverage at 100%+`;
   } else {
     $("recommendation-title").textContent = `Strengthen ${b.toLowerCase()} before expanding`;
@@ -101,8 +95,8 @@ function render() {
   $("bottleneck").textContent = names[model.bottleneckKey];
   const earthShare = round(CONFIG.earthShare[model.bottleneckKey] * 100);
   $("bottleneck-detail").textContent = earthShare ? `${earthShare}% planned Earth support` : `${round(model.bottleneck.margin*100)}% operating margin`;
-  $("runway").textContent = model.minRunway === 999 ? "Stable" : Math.max(0, round(model.minRunway));
-  $("runway-detail").textContent = model.minRunway === 999 ? "No modeled resource deficit" : "Days of inventory at current deficit";
+  $("shortage").textContent = `${model.bottleneckShortage}%`;
+  $("shortage-detail").textContent = model.bottleneckShortage === 0 ? "No shortage in the weakest resource" : `${names[model.bottleneckKey]} demand currently unmet`;
   $("power-util").textContent = `${round(model.powerUtil*100)}%`;
   $("power-detail").textContent = model.powerUtil <= 1 ? `${round((1-model.powerUtil)*100)}% generation headroom` : `${round((model.powerUtil-1)*100)}% over capacity`;
   $("earth-dependency").textContent = `${round(model.dependency*100)}%`;
@@ -112,7 +106,7 @@ function render() {
 
 function readControls() {
   state.population = Number($("population").value); state.water = Number($("water").value); state.food = Number($("food").value); state.power = Number($("power").value);
-  state.buffer = Number($("buffer").value); state.resupply = Number($("resupply").value); state.failedSystem = $("failed-system").value; state.failureSeverity = Number($("failure-severity").value);
+  state.failedSystem = $("failed-system").value; state.failureSeverity = Number($("failure-severity").value);
   render();
 }
 
@@ -151,7 +145,7 @@ function registerWebMCP() {
     description: "Set Mars colony operating inputs and scenario, then return the updated decision result.",
     inputSchema: { type: "object", properties: { population:{type:"number",minimum:8,maximum:80}, scenario:{type:"string",enum:["normal","delay","failure","expansion"]}, water:{type:"number",minimum:30,maximum:160}, food:{type:"number",minimum:20,maximum:140}, power:{type:"number",minimum:50,maximum:180} }, additionalProperties:false },
     annotations: { readOnlyHint:false, untrustedContentHint:false },
-    execute(input) { for (const key of ["population","water","food","power"]) if (input[key] != null) { state[key]=input[key]; $(key).value=input[key]; } if (input.scenario) state.scenario=input.scenario; render(); const m=calculate(); return { lowestCoverage:m.lowestCoverage, phase:m.phase, bottleneck:names[m.bottleneckKey], daysToShortage:m.minRunway===999?null:round(m.minRunway) }; }
+    execute(input) { for (const key of ["population","water","food","power"]) if (input[key] != null) { state[key]=input[key]; $(key).value=input[key]; } if (input.scenario) state.scenario=input.scenario; render(); const m=calculate(); return { lowestCoverage:m.lowestCoverage, phase:m.phase, bottleneck:names[m.bottleneckKey], shortagePercent:m.bottleneckShortage }; }
   });
 }
 
